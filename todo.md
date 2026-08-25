@@ -21,3 +21,5 @@
 - [ ] Author production PostgreSQL migrations with RLS for staged import reports, idempotency records, source mappings, and append-only audit logs.
 - [ ] Produce a security threat model and mitigation matrix for the complete two-phase baseline-import lifecycle.
 - [ ] Deliver the baseline-import lifecycle diagram as editable Mermaid source and a PDF rendering.
+- [ ] Build a controlled PostgreSQL stress harness for batch-idempotency reservations and concurrent apply-lock contention.
+- [ ] Write and rehearse an automated backup, restore, tenant-isolation, and audit-integrity verification playbook for workspace import storage.
