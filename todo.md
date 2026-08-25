@@ -11,3 +11,5 @@
 - [ ] Define and prioritize the single-customer Evidence-Ledger MVP engineering backlog, including identity, tenant isolation, immutable records, evidence handling, exports, audit controls, and pilot operations.
 - [ ] Create the pilot onboarding checklist and sanitized part-family data-ingestion specification, including required CSV/JSON templates and acceptance checks.
 - [ ] Draft the five-target Quality Director follow-up sequence and discovery-qualification questions for the $15,000 pilot.
+- [ ] Define and validate the versioned `import_report.json` schema, including stable row-level error codes for authority-bearing historical actions.
+- [ ] Specify the authenticated dry-run, review, apply, status, and evidence-upload API workflow for pre-acceptance baseline imports.

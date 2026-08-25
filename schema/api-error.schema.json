@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://earthward-foundry.example/schema/api-error.schema.json",
+  "title": "EarthwardApiError",
+  "description": "Safe HTTP error envelope for the workspace API. Validation findings belong in an import report, not in this envelope.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["error"],
+  "properties": {
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "request_id", "retryable"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "AUTHENTICATION-001",
+            "AUTHORIZATION-001",
+            "IMPORT-BATCH-001",
+            "IMPORT-BATCH-002",
+            "IMPORT-BATCH-003",
+            "IMPORT-BATCH-004",
+            "IMPORT-BATCH-005",
+            "IMPORT-PACKAGE-001",
+            "IMPORT-PACKAGE-002",
+            "IMPORT-REPORT-001",
+            "IMPORT-APPLY-001",
+            "IMPORT-APPLY-002",
+            "RATE-LIMIT-001",
+            "INTERNAL-001"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "details": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["field", "reason"],
+            "properties": {
+              "field": {"type": "string", "maxLength": 255},
+              "reason": {"type": "string", "maxLength": 500}
+            }
+          }
+        }
+      }
+    }
+  }
+}

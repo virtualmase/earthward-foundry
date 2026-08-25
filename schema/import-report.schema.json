@@ -1,0 +1,480 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://earthward-foundry.example/schema/import-report.schema.json",
+  "title": "EarthwardImportReport",
+  "description": "Immutable result of validating one staged pre-acceptance evidence-baseline import. A rejected report is a successful validation response with blocking findings; it is not an HTTP transport failure.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "report_type",
+    "schema_version",
+    "report_id",
+    "import_batch_id",
+    "organization_id",
+    "status",
+    "mode",
+    "validation_profile",
+    "created_at",
+    "completed_at",
+    "source_package",
+    "summary",
+    "findings",
+    "apply",
+    "integrity_sha256"
+  ],
+  "properties": {
+    "report_type": {
+      "const": "earthward.evidence-ledger.import-report"
+    },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "report_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "import_batch_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "organization_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["validated", "rejected", "expired"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["sanitized_preflight", "live_pre_acceptance_baseline"]
+    },
+    "validation_profile": {
+      "const": "pre_acceptance_baseline_v1"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["filename", "byte_size", "sha256", "manifest_sha256", "storage_state"],
+      "properties": {
+        "filename": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[^/\\\\]+\\.zip$"
+        },
+        "byte_size": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1073741824
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "storage_state": {
+          "type": "string",
+          "enum": ["clean", "quarantined", "rejected"]
+        }
+      }
+    },
+    "submitted_by": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["membership_id", "submitted_at"],
+      "properties": {
+        "membership_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "submitted_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_file_count",
+        "rows_examined",
+        "rows_accepted",
+        "rows_rejected",
+        "finding_counts",
+        "proposed_records",
+        "rejected_authority_events"
+      ],
+      "properties": {
+        "source_file_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rows_examined": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rows_accepted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rows_rejected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "finding_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["errors", "warnings"],
+          "properties": {
+            "errors": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "warnings": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "proposed_records": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["part_revisions", "part_units", "ledger_events", "attachments", "evidence_links"],
+          "properties": {
+            "part_revisions": {"type": "integer", "minimum": 0},
+            "part_units": {"type": "integer", "minimum": 0},
+            "ledger_events": {"type": "integer", "minimum": 0},
+            "attachments": {"type": "integer", "minimum": 0},
+            "evidence_links": {"type": "integer", "minimum": 0}
+          }
+        },
+        "rejected_authority_events": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["event_type", "count"],
+            "properties": {
+              "event_type": {
+                "$ref": "#/$defs/authorityEventType"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+    "apply": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eligible",
+        "requires_explicit_confirmation",
+        "required_permission",
+        "blocked_by_codes",
+        "report_expires_at",
+        "apply_precondition_sha256"
+      ],
+      "properties": {
+        "eligible": {
+          "type": "boolean"
+        },
+        "requires_explicit_confirmation": {
+          "const": true
+        },
+        "required_permission": {
+          "const": "baseline_import.apply"
+        },
+        "blocked_by_codes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/validationCode"
+          }
+        },
+        "report_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "apply_precondition_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "integrity_sha256": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"status": {"const": "validated"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "apply": {
+            "properties": {
+              "eligible": {"const": true},
+              "blocked_by_codes": {"maxItems": 0}
+            }
+          },
+          "summary": {
+            "properties": {
+              "finding_counts": {
+                "properties": {"errors": {"const": 0}}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "rejected"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "apply": {
+            "properties": {"eligible": {"const": false}}
+          },
+          "summary": {
+            "properties": {
+              "finding_counts": {
+                "properties": {"errors": {"minimum": 1}}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "expired"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "apply": {
+            "properties": {"eligible": {"const": false}}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "authorityEventType": {
+      "type": "string",
+      "enum": ["acceptance_decision", "ncr_closed", "ncr_waived", "shipment"]
+    },
+    "validationCode": {
+      "type": "string",
+      "enum": [
+        "PKG-001",
+        "PKG-002",
+        "SCHEMA-001",
+        "SCHEMA-002",
+        "REF-001",
+        "REF-002",
+        "EVENT-001",
+        "EVENT-002",
+        "POLICY-001",
+        "EVIDENCE-001",
+        "EVIDENCE-002",
+        "IDEMP-001",
+        "AUTH-001",
+        "AUTH-HIST-001",
+        "AUTH-HIST-002",
+        "AUTH-HIST-003",
+        "AUTH-HIST-004",
+        "AUTH-HIST-005",
+        "AUTH-HIST-006"
+      ]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["severity", "code", "message", "remediation"],
+      "properties": {
+        "severity": {
+          "type": "string",
+          "enum": ["error", "warning"]
+        },
+        "code": {
+          "$ref": "#/$defs/validationCode"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "remediation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "location": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "file": {
+              "type": "string",
+              "maxLength": 255,
+              "pattern": "^[A-Za-z0-9._/-]+$"
+            },
+            "row": {
+              "type": "integer",
+              "minimum": 2
+            },
+            "column": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "source_key": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "event_type": {
+              "type": "string",
+              "enum": [
+                "material_receipt",
+                "material_verification",
+                "process_step_start",
+                "process_step_complete",
+                "process_deviation",
+                "inspection_program_run",
+                "inspection_result",
+                "ncr_opened",
+                "ncr_closed",
+                "ncr_waived",
+                "acceptance_decision",
+                "correction",
+                "shipment"
+              ]
+            }
+          }
+        },
+        "rejected_action": {
+          "$ref": "#/$defs/authorityEventType"
+        },
+        "related_source_keys": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": [
+                  "AUTH-HIST-001",
+                  "AUTH-HIST-002",
+                  "AUTH-HIST-003",
+                  "AUTH-HIST-004",
+                  "AUTH-HIST-005",
+                  "AUTH-HIST-006"
+                ]
+              }
+            },
+            "required": ["code"]
+          },
+          "then": {
+            "required": ["location"],
+            "properties": {
+              "severity": {"const": "error"},
+              "location": {
+                "required": ["file", "row", "source_key"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"code": {"const": "AUTH-HIST-001"}},
+            "required": ["code"]
+          },
+          "then": {
+            "required": ["rejected_action"],
+            "properties": {
+              "rejected_action": {"const": "acceptance_decision"},
+              "location": {"properties": {"event_type": {"const": "acceptance_decision"}}, "required": ["event_type"]}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"code": {"const": "AUTH-HIST-002"}},
+            "required": ["code"]
+          },
+          "then": {
+            "required": ["rejected_action"],
+            "properties": {
+              "rejected_action": {"const": "ncr_closed"},
+              "location": {"properties": {"event_type": {"const": "ncr_closed"}}, "required": ["event_type"]}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"code": {"const": "AUTH-HIST-003"}},
+            "required": ["code"]
+          },
+          "then": {
+            "required": ["rejected_action"],
+            "properties": {
+              "rejected_action": {"const": "ncr_waived"},
+              "location": {"properties": {"event_type": {"const": "ncr_waived"}}, "required": ["event_type"]}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"code": {"const": "AUTH-HIST-004"}},
+            "required": ["code"]
+          },
+          "then": {
+            "required": ["rejected_action"],
+            "properties": {
+              "rejected_action": {"const": "shipment"},
+              "location": {"properties": {"event_type": {"const": "shipment"}}, "required": ["event_type"]}
+            }
+          }
+        }
+      ]
+    }
+  }
+}
