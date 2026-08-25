@@ -258,16 +258,22 @@ def test_raise_and_resolve_escalation_happy_path():
 # draft_plan / approve_plan
 # ---------------------------------------------------------------------------
 
-def test_draft_plan_always_status_draft():
+def test_draft_plan_round_trips_assignment_data_with_draft_status():
     incident_id = setup_incident()
+    team_assignments = {"USAR-Team-1": "extract victims"}
+    resource_assignments = {"Rescue-1": "primary extraction vehicle"}
     plan_id = log.draft_plan(
         incident_id, drafted_by="planning-agent",
-        objectives=["extract victims"], team_assignments={}, resource_assignments={},
+        objectives=["extract victims"],
+        team_assignments=team_assignments,
+        resource_assignments=resource_assignments,
         assumptions=["structure stable enough to enter"], open_questions=[],
     )
     rec = log.get_incident(incident_id)
     plan = next(p for p in rec["operational_plans"] if p["plan_id"] == plan_id)
     assert plan["status"] == "draft"
+    assert plan["team_assignments"] == team_assignments
+    assert plan["resource_assignments"] == resource_assignments
 
 
 def test_approve_plan_rejects_non_human_succeeds_for_human():
@@ -359,7 +365,7 @@ ALL_TESTS = [
     test_hazard_block_cleared_once_hazard_resolved,
     test_add_victim_happy_path,
     test_raise_and_resolve_escalation_happy_path,
-    test_draft_plan_always_status_draft,
+    test_draft_plan_round_trips_assignment_data_with_draft_status,
     test_approve_plan_rejects_non_human_succeeds_for_human,
     test_get_incident_unknown_id_raises,
     test_log_action_empty_reference_raises_missing_reference_error,

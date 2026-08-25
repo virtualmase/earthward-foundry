@@ -770,6 +770,8 @@ def get_incident(incident_id: str) -> dict[str, Any]:
                 "drafted_by": r["drafted_by"],
                 "status": r["status"],
                 "objectives": json.loads(r["objectives_json"]),
+                "team_assignments": json.loads(r["team_assignments_json"]),
+                "resource_assignments": json.loads(r["resource_assignments_json"]),
                 "assumptions": json.loads(r["assumptions_json"]),
                 "open_questions": json.loads(r["open_questions_json"]),
                 "approved_by": r["approved_by"],

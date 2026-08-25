@@ -1,8 +1,9 @@
 flask==3.1.3
+# Required by live_agent.py and live_demo.py for the Claude tool-use loop.
+anthropic==1.0.0
 
 # Optional — only needed if using framework-specific tool formatters in agent_tools.py
 # langchain-core>=0.2       # for as_langchain_tools()
-# pydantic>=2.0             # for as_langchain_tools()
+# pydantic>=2.0             # for as_crewai_tools()
 # crewai>=0.55              # for as_crewai_tools()
 # openai>=1.0               # for as_openai_tools() usage example
-# anthropic>=0.30           # for as_anthropic_tools() usage example

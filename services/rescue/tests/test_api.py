@@ -120,6 +120,32 @@ def main():
     assert r.get_json()["cleared"] is True
     print("PASS  clear_hazard (human source) -> 200 as expected")
 
+    # Plan assignments are stored on the append-only plan record and must
+    # remain visible in the incident read model used by API clients.
+    team_assignments = {"USAR-Team-1": "extract victims"}
+    resource_assignments = {"Rescue-1": "primary extraction vehicle"}
+    r = client.post(
+        f"/incidents/{incident_id}/plans",
+        json={
+            "drafted_by": "planning-agent",
+            "objectives": ["extract victims"],
+            "team_assignments": team_assignments,
+            "resource_assignments": resource_assignments,
+            "assumptions": ["structure stable enough to enter"],
+            "open_questions": [],
+        },
+    )
+    assert r.status_code == 201, r.get_json()
+    plan_id = r.get_json()["plan_id"]
+
+    r = client.get(f"/incidents/{incident_id}")
+    assert r.status_code == 200, r.get_json()
+    plans = r.get_json()["operational_plans"]
+    plan = next(p for p in plans if p["plan_id"] == plan_id)
+    assert plan["team_assignments"] == team_assignments
+    assert plan["resource_assignments"] == resource_assignments
+    print("PASS  operational-plan assignment data round-trips through the API")
+
     print("\nAll API smoke tests passed.")
 
 

@@ -644,6 +644,14 @@ components:
         drafted_by: { type: string }
         status: { type: string, enum: [draft, approved] }
         objectives: { type: array, items: { type: string } }
+        team_assignments:
+          type: object
+          additionalProperties: { type: string }
+          description: Map of team identifier to assigned objective
+        resource_assignments:
+          type: object
+          additionalProperties: { type: string }
+          description: Map of resource identifier to assigned role
         assumptions: { type: array, items: { type: string } }
         open_questions: { type: array, items: { type: string } }
         approved_by: { type: string, nullable: true }

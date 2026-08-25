@@ -143,6 +143,45 @@ def test_resume_after_plan_approval_proceeds_past_operations_gate():
     assert "extraction complete" in result["awaiting_human"]["message"].lower()
 
 
+def test_integration_does_not_escalate_objectives_with_persisted_assignments():
+    """Integration must inspect the assignments persisted on the approved
+    plan, rather than falsely reporting every objective as uncovered."""
+    runner = setup_runner()
+    incident_id = log.open_incident(
+        incident_type=IncidentType.URBAN_SAR,
+        priority=IncidentPriority.LIFE_THREAT,
+        location="123 Main St",
+        description="One confirmed trapped victim",
+        source=ActionSource(type="human", id="Dispatcher-IC1"),
+    )
+    plan_id = log.draft_plan(
+        incident_id=incident_id,
+        drafted_by="planning-agent",
+        objectives=["extract victims", "secure utilities"],
+        team_assignments={
+            "USAR-Team-1": "extract victims",
+            "HazMat-Team-1": "secure utilities",
+        },
+        resource_assignments={},
+        assumptions=[],
+        open_questions=[],
+    )
+    log.approve_plan(
+        plan_id=plan_id,
+        incident_id=incident_id,
+        approved_by=ActionSource(type="human", id="IC-1"),
+    )
+
+    result = runner._run_integration(
+        incident_id=incident_id,
+        source=ActionSource(type="agent", id="integration-agent"),
+    )
+
+    assert result["status"] == "integration_check_complete"
+    assert result["unassigned_objectives"] == []
+    assert result["escalations"] == []
+
+
 def test_resume_requires_human_source():
     """resume() must reject a non-human authorized_by outright — this is
     checked up front, before any phase logic runs."""
@@ -287,6 +326,7 @@ ALL_TESTS = [
     test_intake_raises_escalations_along_the_way,
     test_resume_without_approval_reports_awaiting_human,
     test_resume_after_plan_approval_proceeds_past_operations_gate,
+    test_integration_does_not_escalate_objectives_with_persisted_assignments,
     test_resume_requires_human_source,
     test_check_human_gate_operations_requires_approved_plan,
     test_check_human_gate_verification_requires_extraction_complete,

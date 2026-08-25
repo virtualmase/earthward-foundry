@@ -25,12 +25,15 @@ objectives are verified. Same code, same pattern, different domain.
 cd services/rescue
 pip install -r requirements.txt
 
-# Run the demo (no server needed)
+# Run the local demo (no server needed)
 python3 demo.py
 
-# Regression tests
-python3 tests/test_models.py tests/test_incident_log.py tests/test_runner.py tests/test_api_auth.py
-python3 tests/test_api.py   # HTTP smoke test, uses Flask's test client
+# Run every regression test
+for f in tests/test_*.py; do python3 "$f"; done
+
+# Run the live Claude demo (requires ANTHROPIC_API_KEY and makes API calls)
+ANTHROPIC_API_KEY=... python3 live_demo.py
+# Add --chat for an interactive session or --verbose to show tool calls.
 
 # Start the HTTP API (requires an API key — see Authentication below)
 RESCUE_API_KEY=$(openssl rand -hex 32) python3 api.py
@@ -67,7 +70,9 @@ services/rescue/
 ├── logging_config.py   structured request/response/error logging for the API
 ├── openapi.yaml        machine-readable spec for tool/LLM discovery
 ├── agent_tools.py      tool definitions + formatters for every major framework
-├── demo.py             narrated end-to-end walkthrough
+├── demo.py             narrated local end-to-end walkthrough
+├── live_agent.py       stateful Claude tool-use loop over the rescue tool layer
+├── live_demo.py        scripted or interactive live Claude demonstration
 ├── Dockerfile
 ├── tests/              test_models.py, test_incident_log.py, test_runner.py, test_api.py, test_api_auth.py
 └── requirements.txt
