@@ -16,3 +16,5 @@
 - [ ] Author and validate an OpenAPI 3.1 specification for the pre-acceptance baseline import API.
 - [ ] Draft integration tests for `AUTH-HIST-001` through `AUTH-HIST-006` dry-run rejections.
 - [ ] Create TypeScript import-report types and runtime request/response validation hooks for the workspace client SDK.
+- [ ] Verify all AUTH-HIST dry-run rejection tests against a disposable local staging mock server.
+- [ ] Document the staged baseline-import two-phase lifecycle and idempotency behavior with a sequence diagram.

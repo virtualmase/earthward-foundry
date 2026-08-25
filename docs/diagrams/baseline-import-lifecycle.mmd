@@ -1,0 +1,74 @@
+sequenceDiagram
+    autonumber
+    actor Operator as Authorized human
+    participant UI as Workspace UI / SDK
+    participant API as Import API
+    participant Stage as Tenant staging store
+    participant Worker as Validation worker
+    participant Ledger as Tenant ledger database
+    participant Audit as Append-only audit log
+
+    Note over Operator,Audit: Logical Phase 1 — stage and validate. No live ledger writes.
+    Operator->>UI: Select authorized ZIP package
+    UI->>UI: Hash package and validate request shape
+    UI->>API: POST /v1/import-batches<br/>Idempotency-Key: K1
+    API->>API: Verify workspace session, membership, import permission
+    API->>Stage: Create batch B (upload_pending)<br/>bind K1 to canonical request digest
+    API-->>UI: 201 batch B + one upload path
+
+    alt Same K1 + same canonical request
+        UI->>API: POST /v1/import-batches (retry, K1)
+        API-->>UI: 201 original batch B response (no duplicate batch)
+    else Same K1 + different canonical request
+        UI->>API: POST /v1/import-batches (conflict, K1)
+        API-->>UI: 409 IMPORT-BATCH-002
+    end
+
+    UI->>API: PUT /v1/import-batches/B/package<br/>X-Content-SHA256: Dpackage
+    API->>Stage: Stream to tenant quarantine, recompute digest, scan archive
+    Stage-->>API: Clean immutable package Dpackage
+    API->>Stage: Set B = uploaded
+    API-->>UI: 204 No Content
+
+    UI->>API: POST /v1/import-batches/B/dry-run<br/>If-Match: "Dpackage"
+    API->>Stage: Confirm package digest and B = uploaded
+    API->>Worker: Queue deterministic validation of B
+    API-->>UI: 202 validating
+    Worker->>Stage: Parse manifest/CSV/evidence and validate references and policy
+    Worker->>Worker: Reject AUTH-HIST-001...006 when present
+    Worker->>Stage: Write immutable report R with Dapply and eligibility
+    Note over Worker,Ledger: Validation inserts no part, event, attachment, evidence link, or final decision.
+
+    UI->>API: GET /v1/import-batches/B/report
+    API->>Stage: Read immutable report R
+    API-->>UI: 200 validated or rejected report
+
+    alt Report rejected or expired
+        UI->>UI: Disable Apply and display findings
+        Operator->>UI: Correct package and create new batch
+        UI->>API: POST apply with R (attempt)
+        API-->>UI: 409 IMPORT-APPLY-001 or 410 expired
+    else Report validated and reviewed
+        Note over Operator,Audit: Logical Phase 2 — explicit human apply with one atomic tenant transaction.
+        Operator->>UI: Review report and confirm APPLY PRE-ACCEPTANCE BASELINE
+        UI->>API: POST /v1/import-batches/B/apply<br/>Idempotency-Key: K2 and If-Match: "Dapply"
+        API->>API: Re-verify session, membership, permission, report expiry, package digest, policy version
+
+        alt Same K2 + same report/precondition
+            API-->>UI: 202 original apply job J (no duplicate ledger writes)
+        else Same K2 + different request or stale Dapply
+            API-->>UI: 409 idempotency or precondition conflict
+        else Eligible and fresh request
+            API->>Ledger: BEGIN with local organization context
+            Ledger->>Ledger: Insert revisions, units, clean attachments, links,<br/>allowed pre-acceptance events, source-key mappings
+            Ledger->>Ledger: Enforce RLS, append-only policy, and event sequencing
+            Ledger->>Audit: Append legacy_import audit event with B/R/Dapply
+            Ledger->>Ledger: COMMIT (all records) or ROLLBACK (none)
+            API->>Stage: Set B = applied and J terminal state
+            API-->>UI: 202 apply job J
+            UI->>API: GET /v1/import-batches/B/apply-jobs/J
+            API-->>UI: 200 applied + committed counts + audit event ID
+        end
+    end
+
+    Note over Operator,Audit: Historical acceptance, NCR close/waiver, and shipment are never created by this import path.

@@ -49,6 +49,7 @@ class AuthorityHistoryCase:
     target_event_type: str | None = None
     legacy_actor_claim: bool = False
     legacy_sod_claim: bool = False
+    expected_location_file: str = "ledger_events.csv"
 
 
 CASES = (
@@ -76,11 +77,13 @@ CASES = (
         "AUTH-HIST-005",
         "provenance-to-membership reconciliation attempt must be rejected",
         legacy_actor_claim=True,
+        expected_location_file="intake_manifest.json",
     ),
     AuthorityHistoryCase(
         "AUTH-HIST-006",
         "legacy material cannot satisfy separation of duties",
         legacy_sod_claim=True,
+        expected_location_file="intake_manifest.json",
     ),
 )
 
@@ -429,7 +432,7 @@ class WorkspaceImportAuthorityHistoryIntegrationTests(unittest.TestCase):
             self.assertEqual(1, len(findings), report["findings"])
             finding = findings[0]
             self.assertEqual("error", finding["severity"])
-            self.assertIn("ledger_events.csv", finding["location"]["file"])
+            self.assertIn(case.expected_location_file, finding["location"]["file"])
             self.assertIn("source_key", finding["location"])
 
             if case.target_event_type:
