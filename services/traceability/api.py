@@ -15,7 +15,10 @@ To run this API as-is:
     # -> http://127.0.0.1:5000
 """
 
+import hashlib
+import json
 import os
+from datetime import datetime, timezone
 
 from flask import Flask, request, jsonify
 import service as svc
@@ -49,6 +52,34 @@ def create_part():
 def get_record(part_id: str):
     try:
         return jsonify(svc.get_record(part_id))
+    except svc.UnknownPartError as e:
+        return error_response(e, 404)
+
+
+@app.get("/parts/<part_id>/evidence-package")
+def export_evidence_package(part_id: str):
+    """Return a portable, digest-protected snapshot of one part's record.
+
+    The digest proves whether this exported payload was changed after it was
+    produced. It is not a cryptographic signature and must not be presented
+    as an external certification or attestation.
+    """
+    try:
+        package = {
+            "package_type": "earthward.traceability.evidence-package",
+            "schema_version": "1.0",
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "part_record": svc.get_record(part_id),
+        }
+        canonical_payload = json.dumps(
+            package, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+        package["integrity_sha256"] = hashlib.sha256(canonical_payload).hexdigest()
+        response = jsonify(package)
+        response.headers["Content-Disposition"] = (
+            f'attachment; filename="{part_id}-evidence-package.json"'
+        )
+        return response
     except svc.UnknownPartError as e:
         return error_response(e, 404)
 

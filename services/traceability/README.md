@@ -74,6 +74,7 @@ silently allowing them through — the only opt-out is
 |---|---|---|
 | POST | `/parts` | create a part (`part_number`, `revision`) |
 | GET | `/parts/<part_id>` | full record: events, derived status, gap report |
+| GET | `/parts/<part_id>/evidence-package` | portable JSON evidence package with record snapshot and SHA-256 integrity digest |
 | POST | `/parts/<part_id>/events` | append an event (enforces every rule above) |
 | GET | `/parts/<part_id>/gaps` | just the gap report |
 | GET | `/health` | liveness check (no auth required) |
@@ -82,6 +83,18 @@ A rejected write returns the real HTTP status for what went wrong:
 `401` missing/invalid API key, `403` unauthorized source, `409` invalid
 sequence, `404` unknown part, `400` malformed/missing reference,
 `429` rate limit exceeded.
+
+### Evidence package export
+
+`GET /parts/<part_id>/evidence-package` returns a downloadable JSON snapshot
+of the complete part record, including event history, current status, and gap
+report. The package includes `integrity_sha256`, computed over its canonical
+contents before the digest is added. It lets a recipient detect changes made
+to the exported package after it was produced.
+
+The digest is **not a digital signature, certification, or independent
+attestation**. It does not establish regulatory compliance or metrological
+traceability; it preserves a portable, reviewable record for the customer.
 
 ### Wiring the actual Traceability Agent
 

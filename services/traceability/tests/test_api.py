@@ -73,6 +73,25 @@ def main():
     assert len(body["events"]) == 1
     print("PASS  get_record round-trip matches what was written")
 
+    # Export a portable evidence package. The digest detects later changes to
+    # the exported JSON but is deliberately not represented as a signature.
+    r = client.get(f"/parts/{part_id}/evidence-package")
+    assert r.status_code == 200, r.get_json()
+    package = r.get_json()
+    assert package["package_type"] == "earthward.traceability.evidence-package"
+    assert package["schema_version"] == "1.0"
+    assert package["part_record"] == body
+    assert len(package["integrity_sha256"]) == 64
+    assert r.headers["Content-Disposition"] == (
+        f'attachment; filename="{part_id}-evidence-package.json"'
+    )
+    print("PASS  evidence-package export contains record and integrity digest")
+
+    # Unknown records are not turned into incomplete or misleading packages.
+    r = client.get("/parts/does-not-exist/evidence-package")
+    assert r.status_code == 404, r.get_json()
+    print("PASS  evidence-package export (unknown part) -> 404 as expected")
+
     print("\nAll API smoke tests passed.")
 
 
