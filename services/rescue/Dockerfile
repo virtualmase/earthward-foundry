@@ -33,4 +33,4 @@ EXPOSE 5001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD python3 -c "import urllib.request,sys,os; urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"RESCUE_API_PORT\",5001)}/health', timeout=2)" || exit 1
 
-CMD ["python3", "api.py"]
+CMD ["gunicorn", "--workers", "1", "--threads", "4", "--bind", "0.0.0.0:5001", "wsgi:app"]
