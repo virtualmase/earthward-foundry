@@ -6,10 +6,17 @@ right status codes, without needing a live running server.
 Run: python3 tests/test_api.py
 """
 
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# The API now requires TRACEABILITY_API_KEY or explicit opt-out for
+# unauthenticated access (see api_auth.py) — tests exercise the app
+# directly via Flask's test client, so opt out of auth rather than
+# faking a key.
+os.environ.setdefault("ALLOW_UNAUTHENTICATED", "true")
 
 import service as svc
 import api

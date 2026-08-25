@@ -23,28 +23,53 @@ objectives are verified. Same code, same pattern, different domain.
 
 ```bash
 cd services/rescue
-pip install flask
+pip install -r requirements.txt
 
 # Run the demo (no server needed)
-python demo.py
+python3 demo.py
 
-# Start the HTTP API
-python api.py
+# Regression tests
+python3 tests/test_models.py tests/test_incident_log.py tests/test_runner.py tests/test_api_auth.py
+python3 tests/test_api.py   # HTTP smoke test, uses Flask's test client
+
+# Start the HTTP API (requires an API key — see Authentication below)
+RESCUE_API_KEY=$(openssl rand -hex 32) python3 api.py
 # -> http://127.0.0.1:5001
 # -> http://127.0.0.1:5001/openapi.yaml
 ```
+
+Or with Docker: `docker build -t earthward-rescue .` then
+`docker run -p 5001:5001 -e RESCUE_API_KEY=... earthward-rescue` — or
+`docker compose up rescue` from the repo root.
+
+### Authentication
+
+Every request except `GET /health` and `GET /openapi.yaml` requires
+`Authorization: Bearer <RESCUE_API_KEY>`. Unset the key and the API
+refuses all non-exempt requests with `500 ServerMisconfigured` rather than
+silently allowing them through — the only opt-out is
+`ALLOW_UNAUTHENTICATED=true`, for local demos only. Requests are also
+rate-limited (`RATE_LIMIT_PER_MINUTE`, default 120/min, 0 disables). See
+the repo-root `SECURITY.md` for the full model and `.env.example` for
+every variable. **The `source` field in request bodies below is
+provenance for the ledger, not authentication** — it never substitutes
+for the bearer token.
 
 ## Files
 
 ```
 services/rescue/
-├── models.py         data structures, enums, errors
-├── incident_log.py   append-only SQLite incident store (zero external deps)
-├── runner.py         TaskForceRunner — 9-phase pipeline
-├── api.py            Flask HTTP API — model-agnostic, any client can call this
-├── openapi.yaml      machine-readable spec for tool/LLM discovery
-├── agent_tools.py    tool definitions + formatters for every major framework
-├── demo.py           narrated end-to-end walkthrough
+├── models.py           data structures, enums, errors
+├── incident_log.py     append-only SQLite incident store (zero external deps)
+├── runner.py           TaskForceRunner — 9-phase pipeline
+├── api.py              Flask HTTP API — model-agnostic, any client can call this
+├── api_auth.py         bearer-token auth + rate limiting, shared pattern with traceability
+├── logging_config.py   structured request/response/error logging for the API
+├── openapi.yaml        machine-readable spec for tool/LLM discovery
+├── agent_tools.py      tool definitions + formatters for every major framework
+├── demo.py             narrated end-to-end walkthrough
+├── Dockerfile
+├── tests/              test_models.py, test_incident_log.py, test_runner.py, test_api.py, test_api_auth.py
 └── requirements.txt
 ```
 
@@ -77,6 +102,7 @@ GET    /health                               liveness check
 ```bash
 curl -s -X POST http://127.0.0.1:5001/incidents \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $RESCUE_API_KEY" \
   -d '{
     "incident_type": "urban_sar",
     "priority": "life_threat",
@@ -91,6 +117,7 @@ curl -s -X POST http://127.0.0.1:5001/incidents \
 ```bash
 curl -s -X POST http://127.0.0.1:5001/incidents/<id>/actions \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $RESCUE_API_KEY" \
   -d '{
     "action_type": "extraction_started",
     "source": {"type": "human", "id": "Team-Alpha-Lead"},
@@ -104,12 +131,14 @@ curl -s -X POST http://127.0.0.1:5001/incidents/<id>/actions \
 ```bash
 curl -s -X POST http://127.0.0.1:5001/incidents/<id>/actions \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $RESCUE_API_KEY" \
   -d '{
     "action_type": "incident_closed",
     "source": {"type": "agent", "id": "command-agent"},
     "reference": "auto-close-attempt"
   }'
-# -> 403 UnauthorizedSourceError
+# -> 403 UnauthorizedSourceError (note: a request with no/invalid API key
+#    would instead get 401 before ever reaching this check)
 ```
 
 ---

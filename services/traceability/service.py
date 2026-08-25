@@ -24,6 +24,7 @@ schema/part-record.schema.json and docs/build-order.md:
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import json
 import uuid
@@ -33,7 +34,9 @@ from pathlib import Path
 from typing import Any, Optional
 
 
-DB_PATH = Path(__file__).parent / "earthward_traceability.db"
+# Configurable so a deployed container can point the append-only store at a
+# mounted volume instead of the (ephemeral, container-local) default path.
+DB_PATH = Path(os.environ.get("TRACEABILITY_DB_PATH") or (Path(__file__).parent / "earthward_traceability.db"))
 
 VALID_EVENT_TYPES = {
     "material_receipt",

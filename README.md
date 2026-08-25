@@ -1,7 +1,12 @@
 # Earthward Foundry & Works — Agent Fleet Repository
 
+[![CI](https://github.com/virtualmase/earthward-foundry/actions/workflows/ci.yml/badge.svg)](https://github.com/virtualmase/earthward-foundry/actions/workflows/ci.yml)
+
 > Understand the work before making it. Use appropriate materials. Build with care.
 > Measure the result. Keep a useful record. Maintain what is worth keeping.
+
+This repository is proprietary — see `LICENSE`. See `CONTRIBUTING.md` before
+making changes and `SECURITY.md` to report a vulnerability.
 
 This repository holds the operating scaffold for Earthward's agent fleet: the
 role-trained AI agents that support (never replace) the human disciplines of
@@ -14,7 +19,12 @@ earthward-foundry/
 ├── docs/                       institutional framework, roles, build order
 ├── schema/                     shared traceability record schema (JSON Schema)
 ├── services/
-│   └── traceability/           RUNNABLE Phase-1 core-loop service (see below)
+│   ├── traceability/           RUNNABLE Phase-1 core-loop service (HTTP API)
+│   ├── rescue/                 RUNNABLE rescue task force pipeline (HTTP API)
+│   └── metrology/              RUNNABLE CMM programming + quality logic (library)
+├── .github/workflows/ci.yml    lint + full test suite + Docker build, on every push/PR
+├── docker-compose.yml          run traceability + rescue together locally
+├── LICENSE / CONTRIBUTING.md / SECURITY.md
 └── agents/                     one house per folder, one file per agent
     ├── leadership/
     ├── engineering/            Design what should exist
@@ -27,24 +37,55 @@ earthward-foundry/
     └── stewardship/            Maintain, improve, responsibly retire
 ```
 
-## The Traceability service is real and runs today
+## Three services are real and run today
 
-`services/traceability/` is not a stub — it's a working implementation of
-Phase 1 from the build order: an append-only part record store that
-enforces the fleet's hard rules in code (human-only sign-off events,
-valid event sequencing, no editing history) rather than trusting every
-agent's prompt to self-police. It has a passing test suite and a narrated
-demo. Start here:
+These are not stubs — they're working implementations that enforce the
+fleet's hard rules in code (human-only sign-off events, valid event
+sequencing, no editing history) rather than trusting every agent's prompt
+to self-police. Each has a passing test suite; the two HTTP services
+require an API key (see **Running the services** below).
+
+- **`services/traceability/`** — Phase 1 from the build order: an
+  append-only part record store. See `services/traceability/README.md`.
+- **`services/rescue/`** — the incident-response task force pipeline
+  described in the project knowledge wiki. See `services/rescue/README.md`.
+- **`services/metrology/`** — CMM programming and quality-engineering
+  logic (`cmm.py`, `quality.py`); imported as a library, no HTTP API.
 
 ```bash
-cd services/traceability
-python3 demo.py                    # narrated walkthrough, 2 intentional rejections
-python3 tests/test_traceability.py # regression suite
+cd services/traceability && python3 demo.py   # narrated walkthrough, 2 intentional rejections
+cd services/rescue && python3 live_demo.py    # narrated rescue pipeline walkthrough
 ```
 
-See `services/traceability/README.md` for the full breakdown of what's
-enforced where, the HTTP API, and how to wire the actual Traceability
-Agent prompt to it via Claude tool use.
+## Running the services
+
+Both HTTP APIs require an API key in production — see `.env.example` for
+every variable and `SECURITY.md` for the full auth model.
+
+```bash
+# Locally, without Docker:
+cd services/traceability && pip install -r requirements.txt \
+  && TRACEABILITY_API_KEY=$(openssl rand -hex 32) python3 api.py
+cd services/rescue && pip install -r requirements.txt \
+  && RESCUE_API_KEY=$(openssl rand -hex 32) python3 api.py
+
+# Or both together with Docker:
+TRACEABILITY_API_KEY=... RESCUE_API_KEY=... docker compose up --build
+```
+
+## Testing and linting
+
+```bash
+# Per service (also runs standalone: python3 tests/test_x.py)
+cd services/<name> && for f in tests/test_*.py; do python3 "$f"; done
+
+# Lint (errors + pyflakes only, from repo root)
+ruff check .
+```
+
+CI (`.github/workflows/ci.yml`) runs both of the above across a Python
+3.11/3.12/3.13 matrix, plus a Docker build+boot smoke test, on every push
+and PR to `main`.
 
 ## The eight houses
 
@@ -103,14 +144,8 @@ OUTPUT:   the structured format it always responds in
 All house agents write events into one append-only part record, maintained
 by the Traceability Agent. See `schema/part-record.schema.json`.
 
-## Getting this into git
+## Contributing
 
-```bash
-cd earthward-foundry
-git init
-git remote add origin https://github.com/earthwardholdings/earthward-foundry.git
-git add .
-git commit -m "Initial agent fleet scaffold: 8 houses, 31 agents, shared traceability schema"
-git branch -M main
-git push -u origin main
-```
+See `CONTRIBUTING.md` for the required structure for new agent files and
+service modules, and the checks to run before opening a PR. CI enforces
+the same checks on every push and PR to `main`.

@@ -40,6 +40,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any, Optional
 
@@ -53,8 +54,9 @@ from models import (
     UnauthorizedSourceError,
     HazardBlockError,
     InvalidSequenceError,
-    now_iso,
 )
+
+logger = logging.getLogger("earthward.rescue.runner")
 
 # ---------------------------------------------------------------------------
 # Manifest loader
@@ -169,6 +171,10 @@ class TaskForceRunner:
                         "phase": agent_name,
                         "message": gate_message,
                     }
+                    logger.info(
+                        "incident=%s phase=%s awaiting_human message=%r",
+                        incident_id, agent_name, gate_message,
+                    )
                     break
 
             try:
@@ -182,14 +188,20 @@ class TaskForceRunner:
 
                 # If the phase itself says halt, stop the pipeline.
                 if phase_output.get("halt"):
+                    halt_reason = phase_output.get("halt_reason", "unspecified")
                     result["blocks"].append({
                         "phase": agent_name,
-                        "reason": phase_output.get("halt_reason", "unspecified"),
+                        "reason": halt_reason,
                     })
+                    logger.warning(
+                        "incident=%s phase=%s halt reason=%r",
+                        incident_id, agent_name, halt_reason,
+                    )
                     break
 
             except HazardBlockError as e:
                 result["blocks"].append({"phase": agent_name, "reason": str(e)})
+                logger.warning("incident=%s phase=%s hazard_block reason=%r", incident_id, agent_name, str(e))
                 esc_id = log.raise_escalation(
                     incident_id=incident_id,
                     raised_by=agent_name,
@@ -203,10 +215,15 @@ class TaskForceRunner:
                     "escalate_to": "Safety Officer",
                     "reason": str(e),
                 })
+                logger.info(
+                    "incident=%s phase=%s escalation_id=%s escalate_to=Safety Officer",
+                    incident_id, agent_name, esc_id,
+                )
                 break
 
             except InvalidSequenceError as e:
                 result["blocks"].append({"phase": agent_name, "reason": str(e)})
+                logger.warning("incident=%s phase=%s invalid_sequence reason=%r", incident_id, agent_name, str(e))
                 break
 
             except UnauthorizedSourceError as e:
@@ -216,10 +233,12 @@ class TaskForceRunner:
                     "phase": agent_name,
                     "reason": f"CONFIGURATION ERROR — unauthorized source: {e}",
                 })
+                logger.error("incident=%s phase=%s configuration_error unauthorized_source=%r", incident_id, agent_name, str(e))
                 break
 
             except RescueError as e:
                 result["blocks"].append({"phase": agent_name, "reason": str(e)})
+                logger.warning("incident=%s phase=%s rescue_error reason=%r", incident_id, agent_name, str(e))
                 break
 
         return result
@@ -271,6 +290,10 @@ class TaskForceRunner:
                         "phase": agent_name,
                         "message": gate_message,
                     }
+                    logger.info(
+                        "incident=%s phase=%s resume_awaiting_human message=%r",
+                        incident_id, agent_name, gate_message,
+                    )
                     break
 
             try:
@@ -282,14 +305,23 @@ class TaskForceRunner:
                     result["escalations"].extend(phase_output["escalations"])
 
                 if phase_output.get("halt"):
+                    halt_reason = phase_output.get("halt_reason", "unspecified")
                     result["blocks"].append({
                         "phase": agent_name,
-                        "reason": phase_output.get("halt_reason", "unspecified"),
+                        "reason": halt_reason,
                     })
+                    logger.warning(
+                        "incident=%s phase=%s resume_halt reason=%r",
+                        incident_id, agent_name, halt_reason,
+                    )
                     break
 
             except (HazardBlockError, InvalidSequenceError, RescueError) as e:
                 result["blocks"].append({"phase": agent_name, "reason": str(e)})
+                logger.warning(
+                    "incident=%s phase=%s resume_error type=%s reason=%r",
+                    incident_id, agent_name, type(e).__name__, str(e),
+                )
                 break
 
         return result

@@ -1,0 +1,10 @@
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+# Keep this narrow and enforceable: real errors (E9) and pyflakes (F) —
+# undefined names, unused imports, unused variables. Style rules (E/W) are
+# intentionally left off so CI doesn't churn on formatting preferences
+# across a codebase written by many independent agent-file authors.
+select = ["E9", "F"]

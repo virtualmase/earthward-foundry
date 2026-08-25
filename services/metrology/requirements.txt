@@ -1,0 +1,5 @@
+# services/metrology has zero third-party dependencies of its own — cmm.py
+# and quality.py depend only on the Python standard library plus
+# ../traceability/service.py (imported via a relative sys.path insert,
+# not installed as a package). Install traceability's requirements.txt
+# only if you also intend to run its HTTP API alongside metrology.

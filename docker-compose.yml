@@ -1,0 +1,45 @@
+# Runs the two HTTP services side by side for local integration testing.
+# Metrology has no HTTP server (it's a library imported by other agents),
+# so it isn't containerized here.
+#
+# Usage:
+#   TRACEABILITY_API_KEY=... RESCUE_API_KEY=... docker compose up --build
+#
+# Both API keys are required in real use. For a throwaway local demo only,
+# set ALLOW_UNAUTHENTICATED=true instead of a key — never do this outside
+# a machine you fully control.
+
+services:
+  traceability:
+    build: ./services/traceability
+    ports:
+      - "5000:5000"
+    environment:
+      TRACEABILITY_API_KEY: ${TRACEABILITY_API_KEY:-}
+      ALLOW_UNAUTHENTICATED: ${ALLOW_UNAUTHENTICATED:-false}
+    volumes:
+      - traceability-data:/app/data
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  rescue:
+    build: ./services/rescue
+    ports:
+      - "5001:5001"
+    environment:
+      RESCUE_API_KEY: ${RESCUE_API_KEY:-}
+      ALLOW_UNAUTHENTICATED: ${ALLOW_UNAUTHENTICATED:-false}
+    volumes:
+      - rescue-data:/app/data
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5001/health', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  traceability-data:
+  rescue-data:

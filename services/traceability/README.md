@@ -37,21 +37,36 @@ misbehaving or confused agent call can't actually do them:
 
 ```bash
 cd services/traceability
+pip install -r requirements.txt
 
 # 1. Prove the rules hold (narrated walkthrough, includes 2 intentional rejections)
 python3 demo.py
 
-# 2. Regression tests
+# 2. Regression tests (also runnable via pytest, or CI)
 python3 tests/test_traceability.py
+python3 tests/test_api_auth.py
 
 # 3. HTTP API smoke test (no live server needed — uses Flask's test client)
 python3 tests/test_api.py
 
 # 4. Run the actual API
-pip install flask
-python3 api.py
+TRACEABILITY_API_KEY=$(openssl rand -hex 32) python3 api.py
 # -> http://127.0.0.1:5000
 ```
+
+Or with Docker: `docker build -t earthward-traceability .` then
+`docker run -p 5000:5000 -e TRACEABILITY_API_KEY=... earthward-traceability`
+— or `docker compose up traceability` from the repo root.
+
+### Authentication
+
+Every request except `GET /health` requires
+`Authorization: Bearer <TRACEABILITY_API_KEY>`. Unset the key and the API
+refuses all non-exempt requests with `500 ServerMisconfigured` rather than
+silently allowing them through — the only opt-out is
+`ALLOW_UNAUTHENTICATED=true`, for local demos only. See the repo-root
+`SECURITY.md` for the full model, and `.env.example` for every variable
+(including `RATE_LIMIT_PER_MINUTE` and `TRACEABILITY_DB_PATH`).
 
 ### HTTP API
 
@@ -61,11 +76,12 @@ python3 api.py
 | GET | `/parts/<part_id>` | full record: events, derived status, gap report |
 | POST | `/parts/<part_id>/events` | append an event (enforces every rule above) |
 | GET | `/parts/<part_id>/gaps` | just the gap report |
-| GET | `/health` | liveness check |
+| GET | `/health` | liveness check (no auth required) |
 
 A rejected write returns the real HTTP status for what went wrong:
-`403` unauthorized source, `409` invalid sequence, `404` unknown part,
-`400` malformed/missing reference.
+`401` missing/invalid API key, `403` unauthorized source, `409` invalid
+sequence, `404` unknown part, `400` malformed/missing reference,
+`429` rate limit exceeded.
 
 ### Wiring the actual Traceability Agent
 

@@ -24,6 +24,7 @@ Enforces in code the cross-cutting rules from docs/build-order.md:
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import uuid
 from pathlib import Path
@@ -32,26 +33,22 @@ from typing import Any, Optional
 from models import (
     ActionSource,
     ActionType,
-    Escalation,
-    Hazard,
-    Incident,
-    IncidentAction,
     IncidentPriority,
     IncidentType,
     MissingReferenceError,
-    OperationalPlan,
     RescueError,
     UnauthorizedSourceError,
     UnknownIncidentError,
     InvalidSequenceError,
     HazardBlockError,
-    Victim,
     HUMAN_ONLY_ACTION_TYPES,
     now_iso,
 )
 
 
-DB_PATH = Path(__file__).parent / "earthward_rescue.db"
+# Configurable so a deployed container can point the append-only store at a
+# mounted volume instead of the (ephemeral, container-local) default path.
+DB_PATH = Path(os.environ.get("RESCUE_DB_PATH") or (Path(__file__).parent / "earthward_rescue.db"))
 
 
 # ---------------------------------------------------------------------------

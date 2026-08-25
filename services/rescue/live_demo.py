@@ -25,7 +25,6 @@ The scripted walkthrough covers:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 from pathlib import Path
@@ -33,7 +32,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 import incident_log as log
-from models import ActionSource, ActionType, IncidentType, IncidentPriority
+from models import ActionSource, ActionType
 from live_agent import RescueAgent
 
 
@@ -118,11 +117,11 @@ def run_scripted(agent: RescueAgent) -> None:
     _turn("TURN 2 — Field team reports victims")
     # -----------------------------------------------------------------------
     msg = (
-        f"Team Bravo on scene. They've located two victims. "
-        f"Victim 1: adult female, floor 2 east corridor, trapped under debris, "
-        f"conscious and calling out — triage immediate. "
-        f"Victim 2: adult male, apartment 3B, voice contact, ambulatory but blocked — "
-        f"triage delayed. Source is TeamBravo-Lead. Log them both."
+        "Team Bravo on scene. They've located two victims. "
+        "Victim 1: adult female, floor 2 east corridor, trapped under debris, "
+        "conscious and calling out — triage immediate. "
+        "Victim 2: adult male, apartment 3B, voice contact, ambulatory but blocked — "
+        "triage delayed. Source is TeamBravo-Lead. Log them both."
     )
     _human(msg)
     response = agent.run(msg)

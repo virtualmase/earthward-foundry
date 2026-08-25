@@ -1,4 +1,4 @@
-flask>=3.0
+flask==3.1.3
 
 # Optional — only needed if using framework-specific tool formatters in agent_tools.py
 # langchain-core>=0.2       # for as_langchain_tools()

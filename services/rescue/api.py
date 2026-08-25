@@ -42,6 +42,8 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_file
 
 import incident_log as log
+from api_auth import require_api_key
+from logging_config import configure_logging, logger
 from models import (
     ActionSource,
     ActionType,
@@ -57,6 +59,8 @@ from models import (
 from runner import TaskForceRunner
 
 app = Flask(__name__)
+require_api_key(app, "RESCUE_API_KEY")
+configure_logging(app, "rescue")
 _runner = TaskForceRunner()
 _OPENAPI_PATH = Path(__file__).parent / "openapi.yaml"
 
@@ -469,6 +473,19 @@ if __name__ == "__main__":
     log.init_db(reset=False)
     port = int(os.environ.get("RESCUE_API_PORT", 5001))
     debug = os.environ.get("RESCUE_API_DEBUG", "false").lower() == "true"
-    print(f"Earthward Rescue API — http://127.0.0.1:{port}")
-    print(f"OpenAPI spec          — http://127.0.0.1:{port}/openapi.yaml")
-    app.run(debug=debug, port=port)
+    host = os.environ.get("RESCUE_API_HOST", "127.0.0.1")
+    if debug and host not in ("127.0.0.1", "localhost"):
+        raise SystemExit(
+            "Refusing to start: RESCUE_API_DEBUG=true with a non-localhost "
+            "RESCUE_API_HOST. The Werkzeug debugger allows arbitrary code "
+            "execution and must never be reachable off-box."
+        )
+    if not os.environ.get("RESCUE_API_KEY") and os.environ.get("ALLOW_UNAUTHENTICATED", "false").lower() != "true":
+        logger.warning(
+            "RESCUE_API_KEY is not set — the API will reject all non-exempt "
+            "requests with 500 ServerMisconfigured until it is set, or "
+            "ALLOW_UNAUTHENTICATED=true is set for local demos only."
+        )
+    logger.info("Earthward Rescue API starting on http://%s:%d", host, port)
+    logger.info("OpenAPI spec available at http://%s:%d/openapi.yaml", host, port)
+    app.run(debug=debug, host=host, port=port)

@@ -557,7 +557,6 @@ def as_crewai_tools():
     """
     try:
         from crewai.tools import BaseTool
-        from pydantic import BaseModel
     except ImportError:
         raise ImportError("crewai is required: pip install crewai")
 

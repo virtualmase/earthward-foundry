@@ -47,7 +47,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import incident_log as log
 from models import ActionSource, ActionType, IncidentType, IncidentPriority
-from models import UnauthorizedSourceError, InvalidSequenceError, HazardBlockError
+from models import UnauthorizedSourceError, InvalidSequenceError
 from runner import TaskForceRunner
 
 
@@ -230,7 +230,7 @@ def run_demo():
             incident_id=incident_id,
             action_type=ActionType.INCIDENT_CLOSED,
             source=ActionSource(type="human", id="IncidentCommander-Reyes"),
-            reference=f"early-close-attempt",
+            reference="early-close-attempt",
         )
         print("  ERROR: This should have been rejected.")
     except InvalidSequenceError as e:

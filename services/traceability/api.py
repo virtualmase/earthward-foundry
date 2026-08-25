@@ -15,10 +15,16 @@ To run this API as-is:
     # -> http://127.0.0.1:5000
 """
 
+import os
+
 from flask import Flask, request, jsonify
 import service as svc
+from api_auth import require_api_key
+from logging_config import configure_logging, logger
 
 app = Flask(__name__)
+require_api_key(app, "TRACEABILITY_API_KEY")
+configure_logging(app, "traceability")
 
 
 def error_response(e: Exception, code: int = 400):
@@ -89,4 +95,20 @@ def health():
 
 if __name__ == "__main__":
     svc.init_db(reset=False)  # never reset a running API's data on boot
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("TRACEABILITY_API_PORT", 5000))
+    debug = os.environ.get("TRACEABILITY_API_DEBUG", "false").lower() == "true"
+    host = os.environ.get("TRACEABILITY_API_HOST", "127.0.0.1")
+    if debug and host not in ("127.0.0.1", "localhost"):
+        raise SystemExit(
+            "Refusing to start: TRACEABILITY_API_DEBUG=true with a non-localhost "
+            "TRACEABILITY_API_HOST. The Werkzeug debugger allows arbitrary code "
+            "execution and must never be reachable off-box."
+        )
+    if not os.environ.get("TRACEABILITY_API_KEY") and os.environ.get("ALLOW_UNAUTHENTICATED", "false").lower() != "true":
+        logger.warning(
+            "TRACEABILITY_API_KEY is not set — the API will reject all non-exempt "
+            "requests with 500 ServerMisconfigured until it is set, or "
+            "ALLOW_UNAUTHENTICATED=true is set for local demos only."
+        )
+    logger.info("Earthward Traceability API starting on http://%s:%d", host, port)
+    app.run(debug=debug, host=host, port=port)
