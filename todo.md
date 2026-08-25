@@ -18,3 +18,6 @@
 - [ ] Create TypeScript import-report types and runtime request/response validation hooks for the workspace client SDK.
 - [ ] Verify all AUTH-HIST dry-run rejection tests against a disposable local staging mock server.
 - [ ] Document the staged baseline-import two-phase lifecycle and idempotency behavior with a sequence diagram.
+- [ ] Author production PostgreSQL migrations with RLS for staged import reports, idempotency records, source mappings, and append-only audit logs.
+- [ ] Produce a security threat model and mitigation matrix for the complete two-phase baseline-import lifecycle.
+- [ ] Deliver the baseline-import lifecycle diagram as editable Mermaid source and a PDF rendering.

@@ -1,0 +1,10 @@
+{
+  "entry": "main.typ",
+  "metadata": {
+    "author": "Manus AI",
+    "subtitle": "Logical two-phase workflow and transactional apply controls",
+    "title": "Pre-Acceptance Baseline-Import Lifecycle"
+  },
+  "mode": "report",
+  "theme": "report-theme.typ"
+}
