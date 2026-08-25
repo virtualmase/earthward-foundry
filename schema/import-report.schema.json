@@ -417,7 +417,12 @@
             "properties": {
               "severity": {"const": "error"},
               "location": {
-                "required": ["file", "row", "source_key"]
+                "required": ["file", "row", "source_key"],
+                "properties": {
+                  "file": {"type": "string"},
+                  "row": {"type": "integer", "minimum": 2},
+                  "source_key": {"type": "string"}
+                }
               }
             }
           }

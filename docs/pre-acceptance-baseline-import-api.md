@@ -207,6 +207,17 @@ An authority-bearing row produces the following form. The actual SHA-256 values 
 
 `AUTH-HIST-001` through `AUTH-HIST-004` must be present as row-level `error` findings with the CSV file, row, source key, event type, and matching `rejected_action`. `AUTH-HIST-005` and `AUTH-HIST-006` are also errors and require the location/source key that triggered the attempt.
 
+### Reserved-prohibited claim detection
+
+The importer must distinguish an ordinary malformed manifest from a deliberate attempt to convert historic provenance into present authority. Before generic manifest-schema rejection, it inspects the reserved top-level key `legacy_authority_claims`. This key is **never valid in a production intake package**. Its presence produces an authority-history rejection rather than being silently ignored or downgraded to a generic schema finding.
+
+| Reserved prohibited claim | Required error | Meaning |
+|---|---|---|
+| `legacy_authority_claims.provenance_to_membership` | `AUTH-HIST-005` | A package attempts to map a historic `source_provenance_label` to a current membership, role, or approval authority. |
+| `legacy_authority_claims.separation_of_duties_satisfaction` | `AUTH-HIST-006` | A package attempts to treat a historic label, document, or prior review as the independent current review required for final acceptance. |
+
+The parser records the manifest location and the affected source key when available, emits a blocking `error`, and rejects the entire batch. Any other unsupported manifest key follows the ordinary `SCHEMA-001` path. The `AUTH-HIST-005` and `AUTH-HIST-006` test fixtures intentionally exercise these reserved negative vectors; they do not model accepted customer data.
+
 ## HTTP error envelope
 
 Transport, authentication, state, and authorization failures use [`schema/api-error.schema.json`](../schema/api-error.schema.json). They are distinct from a completed dry-run report.

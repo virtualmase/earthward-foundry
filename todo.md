@@ -13,3 +13,6 @@
 - [ ] Draft the five-target Quality Director follow-up sequence and discovery-qualification questions for the $15,000 pilot.
 - [ ] Define and validate the versioned `import_report.json` schema, including stable row-level error codes for authority-bearing historical actions.
 - [ ] Specify the authenticated dry-run, review, apply, status, and evidence-upload API workflow for pre-acceptance baseline imports.
+- [ ] Author and validate an OpenAPI 3.1 specification for the pre-acceptance baseline import API.
+- [ ] Draft integration tests for `AUTH-HIST-001` through `AUTH-HIST-006` dry-run rejections.
+- [ ] Create TypeScript import-report types and runtime request/response validation hooks for the workspace client SDK.

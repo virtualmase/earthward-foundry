@@ -1,0 +1,653 @@
+openapi: 3.1.0
+info:
+  title: Earthward Evidence-Ledger Workspace Import API
+  version: 1.0.0
+  summary: Controlled pre-acceptance evidence-baseline import API
+  license:
+    name: Proprietary — pilot and evaluation use only
+    identifier: LicenseRef-Proprietary
+  description: |
+    This is the future authenticated workspace API for importing a
+    pre-acceptance evidence baseline. It is not implemented by the current
+    single-tenant bearer-key Traceability API.
+
+    The API is organization-scoped through the authenticated workspace session.
+    It never accepts organization identity, user identity, approval authority,
+    or an event source as caller-supplied request-body fields. A dry run creates
+    an immutable `import_report` but writes no part, event, attachment, or
+    evidence-link record. Applying an eligible report is a separate, explicit,
+    named-human action.
+
+    Historical `acceptance_decision`, `ncr_closed`, `ncr_waived`, and `shipment`
+    rows are rejected by the pre-acceptance validation profile. A completed dry
+    run with source-data errors returns `200 OK` and an `import_report` whose
+    `status` is `rejected`; it is not an HTTP transport error.
+servers:
+  - url: https://api.example.earthwardfoundry.com
+    description: Production workspace API placeholder; replace at deployment.
+  - url: http://127.0.0.1:5000
+    description: Local development placeholder; workspace identity middleware is required.
+tags:
+  - name: Baseline imports
+    description: Staged, dry-run, reviewed, atomic imports of pre-acceptance evidence.
+paths:
+  /v1/import-batches:
+    post:
+      tags: [Baseline imports]
+      operationId: createBaselineImportBatch
+      summary: Create an immutable baseline-import staging batch
+      description: |
+        Creates a tenant-scoped staging container. The active organization and
+        submitting membership are derived from the workspace access token. The
+        client supplies the expected ZIP metadata but no storage path.
+      security:
+        - WorkspaceBearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateImportBatchRequest'
+      responses:
+        '201':
+          description: Staging batch created.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedImportBatch'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/import-batches/{batch_id}:
+    get:
+      tags: [Baseline imports]
+      operationId: getBaselineImportBatch
+      summary: Get batch state and report/apply links
+      security:
+        - WorkspaceBearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BatchId'
+      responses:
+        '200':
+          description: Batch resource visible within the active organization.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportBatch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [Baseline imports]
+      operationId: discardBaselineImportBatch
+      summary: Discard an unapplied staging batch
+      description: |
+        Permitted only before an import batch is applied. This removes staged
+        package content according to the retention policy but retains audit
+        metadata. Applied batches cannot be deleted through this endpoint.
+      security:
+        - WorkspaceBearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BatchId'
+      responses:
+        '204':
+          description: Staged batch discarded. No response body.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/import-batches/{batch_id}/package:
+    put:
+      tags: [Baseline imports]
+      operationId: uploadBaselineImportPackage
+      summary: Upload the one immutable ZIP package for a staging batch
+      description: |
+        The server streams upload bytes to organization-scoped quarantine storage,
+        recomputes the SHA-256, limits archive size and entries, rejects unsafe
+        archive paths/symlinks/encryption, and runs the configured file-safety
+        policy before accepting the package. A batch accepts only one package.
+      security:
+        - WorkspaceBearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BatchId'
+        - $ref: '#/components/parameters/ContentSha256'
+      requestBody:
+        required: true
+        content:
+          application/zip:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '204':
+          description: Package accepted and placed in clean staged storage.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '413':
+          $ref: '#/components/responses/PackageTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/import-batches/{batch_id}/dry-run:
+    post:
+      tags: [Baseline imports]
+      operationId: startBaselineImportDryRun
+      summary: Validate the immutable package without writing live evidence records
+      description: |
+        Starts a deterministic asynchronous validation run against the exact
+        staged package identified by `If-Match`. Validation evaluates the
+        `pre_acceptance_baseline_v1` policy profile. It must not create a part,
+        ledger event, attachment, evidence link, final acceptance, closure,
+        waiver, shipment, or current ledger status.
+      security:
+        - WorkspaceBearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BatchId'
+        - $ref: '#/components/parameters/PackageDigestIfMatch'
+      responses:
+        '202':
+          description: Validation job accepted.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DryRunAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/import-batches/{batch_id}/report:
+    get:
+      tags: [Baseline imports]
+      operationId: getBaselineImportReport
+      summary: Get the immutable dry-run report
+      description: |
+        Returns `200 OK` for either a `validated` or `rejected` report. The
+        client must enable apply only when `apply.eligible` is true. Returns
+        `409` while validation is in progress.
+      security:
+        - WorkspaceBearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BatchId'
+      responses:
+        '200':
+          description: "Completed import report. `status: rejected` is a completed validation result."
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '../../schema/import-report.schema.json'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/import-batches/{batch_id}/apply:
+    post:
+      tags: [Baseline imports]
+      operationId: applyBaselineImport
+      summary: Explicitly and atomically apply an eligible pre-acceptance baseline
+      description: |
+        The server re-checks active organization, membership, `baseline_import.apply`
+        permission, batch state, report ID, report digest, expiry, source package
+        digest, policy/role configuration version, and replay protection immediately
+        before creating live records. The transaction is all-or-nothing.
+
+        This operation does not and cannot authorize final acceptance, NCR closure,
+        NCR waiver, or shipment from historical data.
+      security:
+        - WorkspaceBearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BatchId'
+        - $ref: '#/components/parameters/ApplyPreconditionIfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyImportRequest'
+      responses:
+        '202':
+          description: Apply job accepted. Query the returned status path until terminal state.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplyJobAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '410':
+          $ref: '#/components/responses/Gone'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/import-batches/{batch_id}/apply-jobs/{job_id}:
+    get:
+      tags: [Baseline imports]
+      operationId: getBaselineImportApplyJob
+      summary: Get the status of an apply job
+      security:
+        - WorkspaceBearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BatchId'
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Apply job state and, after success, committed-record and audit details.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/RequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplyJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    WorkspaceBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        A verified workspace session. The server derives the active organization,
+        membership, and role permissions from this token and server-side session
+        state. Tokens with only the legacy static API-key model are not sufficient.
+  parameters:
+    BatchId:
+      name: batch_id
+      in: path
+      required: true
+      description: Tenant-scoped import batch identifier.
+      schema:
+        type: string
+        format: uuid
+    JobId:
+      name: job_id
+      in: path
+      required: true
+      description: Tenant-scoped import apply-job identifier.
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: UUID unique to the request intent. Reusing it with a different body is a conflict.
+      schema:
+        type: string
+        format: uuid
+    ContentSha256:
+      name: X-Content-SHA256
+      in: header
+      required: true
+      description: Lowercase hexadecimal SHA-256 of the exact ZIP body.
+      schema:
+        $ref: '#/components/schemas/Sha256'
+    PackageDigestIfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Strong ETag containing the declared package SHA-256 in double quotes.
+      schema:
+        type: string
+        pattern: '^"[a-f0-9]{64}"$'
+    ApplyPreconditionIfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Strong ETag containing the report `apply_precondition_sha256` in double quotes.
+      schema:
+        type: string
+        pattern: '^"[a-f0-9]{64}"$'
+  headers:
+    RequestId:
+      description: Opaque request-correlation identifier. Include it when contacting support.
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Invalid request declaration, header, or package metadata before completed validation.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schema/api-error.schema.json'
+    Unauthorized:
+      description: Missing, expired, or invalid workspace session.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schema/api-error.schema.json'
+    Forbidden:
+      description: Caller does not have an active membership or required permission.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schema/api-error.schema.json'
+    NotFound:
+      description: Batch or apply job is not found in the active organization.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schema/api-error.schema.json'
+    Conflict:
+      description: Idempotency conflict, unsafe state transition, report still running, stale precondition, or already-applied batch.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schema/api-error.schema.json'
+    Gone:
+      description: Batch or reviewed report expired.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schema/api-error.schema.json'
+    PackageTooLarge:
+      description: ZIP package exceeds configured size or safe-extraction limits.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schema/api-error.schema.json'
+    UnsupportedMediaType:
+      description: Package upload requires application/zip.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schema/api-error.schema.json'
+    RateLimited:
+      description: Request rate exceeds the workspace policy.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schema/api-error.schema.json'
+    InternalError:
+      description: Unexpected failure. The body never includes raw exception traces, credentials, or other-tenant information.
+      content:
+        application/json:
+          schema:
+            $ref: '../../schema/api-error.schema.json'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    Sha256:
+      type: string
+      pattern: '^[a-f0-9]{64}$'
+      example: c10edffb5a06b5db0c64d2f9bf78608b77d4c03e0350436c7e7f267dca0f374c
+    ImportMode:
+      type: string
+      enum: [sanitized_preflight, live_pre_acceptance_baseline]
+    ImportBatchState:
+      type: string
+      enum:
+        - upload_pending
+        - uploaded
+        - validating
+        - validated
+        - rejected
+        - applying
+        - applied
+        - apply_failed
+        - expired
+        - discarded
+    SourcePackageDeclaration:
+      type: object
+      additionalProperties: false
+      required: [filename, byte_size, sha256]
+      properties:
+        filename:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: '^[^/\\]+\.zip$'
+        byte_size:
+          type: integer
+          minimum: 1
+          maximum: 1073741824
+        sha256:
+          $ref: '#/components/schemas/Sha256'
+    CreateImportBatchRequest:
+      type: object
+      additionalProperties: false
+      required: [mode, facility_code, source_package]
+      properties:
+        mode:
+          $ref: '#/components/schemas/ImportMode'
+        facility_code:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Facility code already configured within the active organization.
+        source_package:
+          $ref: '#/components/schemas/SourcePackageDeclaration'
+    CreatedImportBatch:
+      type: object
+      additionalProperties: false
+      required: [import_batch_id, state, upload]
+      properties:
+        import_batch_id:
+          $ref: '#/components/schemas/Uuid'
+        state:
+          type: string
+          const: upload_pending
+        upload:
+          type: object
+          additionalProperties: false
+          required: [method, path, expires_at, required_content_type, required_sha256]
+          properties:
+            method:
+              type: string
+              const: PUT
+            path:
+              type: string
+              pattern: '^/v1/import-batches/[0-9a-f-]+/package$'
+            expires_at:
+              type: string
+              format: date-time
+            required_content_type:
+              type: string
+              const: application/zip
+            required_sha256:
+              $ref: '#/components/schemas/Sha256'
+    ImportBatch:
+      type: object
+      additionalProperties: false
+      required: [import_batch_id, state, mode, facility_code, created_at, links]
+      properties:
+        import_batch_id:
+          $ref: '#/components/schemas/Uuid'
+        state:
+          $ref: '#/components/schemas/ImportBatchState'
+        mode:
+          $ref: '#/components/schemas/ImportMode'
+        facility_code:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        report_id:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        links:
+          type: object
+          additionalProperties: false
+          required: [self]
+          properties:
+            self:
+              type: string
+              format: uri-reference
+            report:
+              type: [string, 'null']
+              format: uri-reference
+            apply:
+              type: [string, 'null']
+              format: uri-reference
+    DryRunAccepted:
+      type: object
+      additionalProperties: false
+      required: [import_batch_id, state, report_path]
+      properties:
+        import_batch_id:
+          $ref: '#/components/schemas/Uuid'
+        state:
+          type: string
+          const: validating
+        report_path:
+          type: string
+          format: uri-reference
+    ApplyImportRequest:
+      type: object
+      additionalProperties: false
+      required: [report_id, confirmation]
+      properties:
+        report_id:
+          $ref: '#/components/schemas/Uuid'
+        confirmation:
+          type: string
+          const: APPLY PRE-ACCEPTANCE BASELINE
+          description: Explicit human confirmation shown only after the client displays the completed report.
+    ApplyJobAccepted:
+      type: object
+      additionalProperties: false
+      required: [apply_job_id, import_batch_id, state, status_path]
+      properties:
+        apply_job_id:
+          $ref: '#/components/schemas/Uuid'
+        import_batch_id:
+          $ref: '#/components/schemas/Uuid'
+        state:
+          type: string
+          const: applying
+        status_path:
+          type: string
+          format: uri-reference
+    ApplyJobState:
+      type: string
+      enum: [applying, applied, apply_failed]
+    ApplyJob:
+      type: object
+      additionalProperties: false
+      required: [apply_job_id, import_batch_id, state, created_at]
+      properties:
+        apply_job_id:
+          $ref: '#/components/schemas/Uuid'
+        import_batch_id:
+          $ref: '#/components/schemas/Uuid'
+        state:
+          $ref: '#/components/schemas/ApplyJobState'
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: [string, 'null']
+          format: date-time
+        audit_event_id:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        committed_records:
+          oneOf:
+            - type: object
+              additionalProperties: false
+              required: [part_revisions, part_units, ledger_events, attachments, evidence_links]
+              properties:
+                part_revisions: { type: integer, minimum: 0 }
+                part_units: { type: integer, minimum: 0 }
+                ledger_events: { type: integer, minimum: 0 }
+                attachments: { type: integer, minimum: 0 }
+                evidence_links: { type: integer, minimum: 0 }
+            - type: 'null'

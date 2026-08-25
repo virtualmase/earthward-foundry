@@ -1,0 +1,13 @@
+{
+  "name": "@earthward-foundry/evidence-ledger-import-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript import client contract for the Earthward Evidence-Ledger workspace API.",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
+}
