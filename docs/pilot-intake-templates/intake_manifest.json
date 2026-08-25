@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "organization_alias": "ORG-ALIAS",
+  "facility_code": "FAC-01",
+  "pilot_mode": "sanitized_preflight",
+  "submitted_by_alias": "USER-TR-01",
+  "created_at": "2026-08-24T14:30:00-07:00",
+  "source_files": [
+    {
+      "path": "part_revisions.csv",
+      "sha256": "REPLACE_WITH_64_CHARACTER_LOWERCASE_HEX_SHA256"
+    },
+    {
+      "path": "part_units.csv",
+      "sha256": "REPLACE_WITH_64_CHARACTER_LOWERCASE_HEX_SHA256"
+    },
+    {
+      "path": "ledger_events.csv",
+      "sha256": "REPLACE_WITH_64_CHARACTER_LOWERCASE_HEX_SHA256"
+    },
+    {
+      "path": "evidence_manifest.csv",
+      "sha256": "REPLACE_WITH_64_CHARACTER_LOWERCASE_HEX_SHA256"
+    }
+  ]
+}
