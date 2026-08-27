@@ -1,0 +1,4 @@
+/* Workshop Ledger palette calibration — Earthward Foundry public field guide.
+   The warm accent marks a held condition or accountable human decision, never a generic conversion cue. */
+:root{--rust:#a64027;--rust-light:#d27a5d}
+.piece-node.hold rect{fill:#a64027;stroke:#a64027}.decision-pin circle{fill:#a64027}

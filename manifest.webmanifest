@@ -1,0 +1,10 @@
+{
+  "name": "Earthward Foundry Public Field Guide",
+  "short_name": "Earthward",
+  "description": "A public field guide for Earthward Foundry's proposed evidence-led quality and traceability pilot.",
+  "start_url": "/earthward-foundry/",
+  "display": "browser",
+  "background_color": "#f1eee5",
+  "theme_color": "#173d59",
+  "icons": [{"src":"favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
+}
