@@ -25,3 +25,11 @@ The field guide keeps a deliberately restrained material palette rather than ado
 The immutable public-source commit is `eb1f74f922285377bae71dc586e1ab121d36cb21`. Its `public-site/` subtree produced static-only candidate `b07a98fbd3302d5f0649bf62b4e9c8671623e94c`, pushed to the dedicated `gh-pages` branch. The branch inventory contains only the field-guide files, identity/discovery artifacts, local validation scripts, and release notes; it contains no protected-service, deployment, database, key, or cloud-configuration path.
 
 The GitHub Pages settings show `gh-pages` and `/ (root)` as the configured publishing source and report that the site is being built from that branch. Public route, custom-404 behavior, and discovery-asset responses have not yet been recorded as live checks.
+
+## Live public verification — 2026-08-27
+
+GitHub Pages completed successfully from immutable static commit `de0c12787b32035e6f8be5db97beb160a408d619`, derived from source commit `d49a2085ff6c3c3ee2d324bd1cdf77fb22e35dc5`. The Pages API reports `built` with `gh-pages` and `/ (root)` as source. The build record is available at <https://github.com/virtualmase/earthward-foundry/actions/runs/33110694494>.
+
+The live canonical field guide at `https://virtualmase.github.io/earthward-foundry/` returned `200` and rendered the calibrated Workshop Ledger composition in a browser review. A deliberately missing project route returned `404` and served the custom Earthward recovery page (`Route unavailable — Earthward Foundry` / `That record is not…`). Direct `404.html`, `favicon.svg`, `og-image.svg`, `manifest.webmanifest`, `robots.txt`, `sitemap.xml`, and `llms.txt` requests each returned `200`; the canonical and sitemap references are present in the deployed output.
+
+No custom domain, DNS, Vercel, analytics, Search Console submission/indexing request, public API, VM, firewall, database, or protected-service change was made for this release.
