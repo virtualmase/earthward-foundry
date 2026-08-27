@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://virtualmase.github.io/earthward-foundry/sitemap.xml

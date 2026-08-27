@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Earthward Foundry public field guide</title>
+  <desc id="desc">A material editorial composition with a workpiece mark, record seam, and the phrase Make the work reviewable.</desc>
+  <defs><pattern id="grid" width="35" height="35" patternUnits="userSpaceOnUse"><path d="M35 0H0V35" fill="none" stroke="#41627a" stroke-width="1"/></pattern></defs>
+  <rect width="1200" height="630" fill="#f1eee5"/><rect x="716" width="484" height="630" fill="#173d59"/><rect x="716" width="484" height="630" fill="url(#grid)" opacity=".55"/>
+  <rect x="74" y="77" width="10" height="10" fill="#b54a2b"/><text x="103" y="87" fill="#53656b" font-family="monospace" font-size="15" letter-spacing="3">EARTHWARD FOUNDRY / PUBLIC FIELD GUIDE</text>
+  <text x="73" y="228" fill="#182c39" font-family="Georgia,serif" font-size="99" letter-spacing="-5">Make the work</text><text x="73" y="322" fill="#b54a2b" font-family="Georgia,serif" font-size="99" font-style="italic" letter-spacing="-5">reviewable.</text>
+  <text x="76" y="391" fill="#53656b" font-family="Arial,sans-serif" font-size="24">Quality evidence and accountable human decisions</text><text x="76" y="425" fill="#53656b" font-family="Arial,sans-serif" font-size="24">for physical work.</text>
+  <rect x="824" y="176" width="238" height="230" fill="#f1eee5"/><rect x="937" y="176" width="15" height="230" fill="#b54a2b"/><circle cx="880" cy="291" r="34" fill="#c7d4cf"/><path d="M985 244h44M985 291h44M985 338h44" stroke="#173d59" stroke-width="8"/>
+  <path d="M753 497h368" stroke="#b8c6c9" stroke-width="2" stroke-dasharray="8 9"/><text x="754" y="535" fill="#e8e4d9" font-family="monospace" font-size="15" letter-spacing="2">REQUIREMENT → RECORD → INSPECT → HUMAN DECISION</text>
+  <text x="75" y="563" fill="#173d59" font-family="monospace" font-size="15" letter-spacing="2">EARTHWARD FOUNDRY / NOT A CERTIFICATION OR PUBLIC SERVICE</text>
+</svg>

@@ -1,0 +1,16 @@
+# Earthward Foundry Public Field Guide
+
+> A public field guide for Earthward Foundry's proposed narrow, human-governed quality and traceability evidence-led pilot for one high-mix, low-volume manufacturing part family.
+
+## Start here
+
+- [Public field guide](https://virtualmase.github.io/earthward-foundry/): explains the proposed work-and-record loop, public boundary, source basis, and correction routes.
+- [Production offer](https://github.com/virtualmase/earthward-foundry/blob/main/docs/production-offer.md): source-controlled proposed first offer, explicit exclusions, and production gates.
+- [Public-site launch brief](https://github.com/virtualmase/earthward-foundry/blob/main/docs/public-site-launch-brief.md): reader task, factual boundary, claims and non-claims.
+
+## Important limits
+
+- This property is informational and collects no visitor input.
+- It is not a public API, live customer workspace, certification, metrological-traceability assertion, or quality-acceptance authority.
+- Protected Earthward pilot services are local-only and bearer-protected; do not attempt to discover or call them.
+- Use only sanitized public discussion through the repository’s issue and security routes.
