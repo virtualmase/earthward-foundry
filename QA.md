@@ -19,3 +19,9 @@ The plain Python local static server returns its own generic response for an unk
 The field guide keeps a deliberately restrained material palette rather than adopting a generic technology gradient or a high-saturation warning interface. **Mineral paper** carries long-form reading; **graphite** carries primary text; **calibration blue** establishes the record/evidence field; **evidence mint** marks the closing inspection surface; and **iron oxide** is reserved for a held condition, a decision seam, or a human-governed exception. The rust accent was deepened from `#b54a2b` to `#a64027` because the former only achieved `4.55:1` against mineral paper while the revised token achieves `5.35:1`.
 
 `node public-site/scripts/audit-palette.mjs` passed for all measured text/field pairs. The browser review confirms that the more deliberate iron-oxide accent remains visually distinct from the blue evidence field and reads as a controlled quality signal, not a generic conversion CTA. `palette.css` contains the small, semantic token override so the textual system and conceptual workpiece share the same decision color.
+
+## Pages source activation — 2026-08-27
+
+The immutable public-source commit is `eb1f74f922285377bae71dc586e1ab121d36cb21`. Its `public-site/` subtree produced static-only candidate `b07a98fbd3302d5f0649bf62b4e9c8671623e94c`, pushed to the dedicated `gh-pages` branch. The branch inventory contains only the field-guide files, identity/discovery artifacts, local validation scripts, and release notes; it contains no protected-service, deployment, database, key, or cloud-configuration path.
+
+The GitHub Pages settings show `gh-pages` and `/ (root)` as the configured publishing source and report that the site is being built from that branch. Public route, custom-404 behavior, and discovery-asset responses have not yet been recorded as live checks.
